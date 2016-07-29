@@ -153,6 +153,7 @@ function randomizeROM(buffer, seed)
 	{
 		randomizeBackgrounds(random, rom);
 		randomizeColorPalettes(stages, random, rom);
+		randomizeLevelModes(random, rom);
 	}
 
 	// update other text in the game if randomized
@@ -1072,6 +1073,47 @@ function randomizeColorPaletteByAddr(random, layer1, layer2, rom)
 
 		rom[addr+0] = (rom[addr+0] & 0x1F) | (bgp << 5);
 		rom[addr+1] = (rom[addr+1] & 0x1F) | (bgc << 5);
+	}
+}
+
+function randomizeLevelModes(random, rom) {
+	//randomly replace level modes with "dark bg" or "translucent" level modes, if other level mode settings are compatible
+	
+	for (var id = 0; id < 0x200; ++id)
+	{
+		var snes = getPointer(LAYER1_OFFSET + 3 * id, 3, rom);
+		var addr = snesAddressToOffset(snes) + 1;
+		
+		var levelmode = (rom[addr] & 0x1F);
+		if (levelmode == 0x00 || levelmode == 0x0C || levelmode == 0x0E || levelmode == 0x11 || levelmode == 0x1E) {
+			//normal, dark bg, translucent/priority layer 3, dark fg+bg, translucent
+			levelmode = random.from([0x00, 0x0C, 0x0E, 0x11, 0x1E]);
+			
+		} else if (levelmode == 0x01 || levelmode == 0x0F) {
+			//layer 2 (no interaction), layer 2 (no interaction) translucent/priority layer3
+			levelmode = random.from([0x01, 0x0F, 0x1F]);
+			
+		} else if (levelmode == 0x02 || levelmode == 0x1F) {
+			//layer 2, layer 2 translucent
+			levelmode = random.from([0x02, 0x1F]);
+			
+		} else if (levelmode == 0x07) {
+			//vertical layer 2 (no interaction)
+			
+		} else if (levelmode == 0x08) {
+			//vertical layer 2
+			
+		} else if (levelmode == 0x09 || levelmode == 0x0B || levelmode == 0x10) {
+			//boss
+			
+		} else if (levelmode == 0x0A || levelmode == 0x0D) {
+			//vertical, vertical dark bg
+			levelmode = random.from([0x0A, 0x0D]);
+			
+		} else {
+			//impossible
+		}
+		rom[addr] = (rom[addr] & 0xE0) | levelmode;
 	}
 }
 
